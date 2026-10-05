@@ -164,6 +164,68 @@
       padding: 20px;
     }
 
+    /* --- GENERATION FILTER BAR --- */
+    .gen-filter-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .gen-filter-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--pokedex-yellow);
+      letter-spacing: 1px;
+    }
+
+    .gen-buttons-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .gen-btn {
+      background: #1a0d10;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .gen-btn:hover {
+      border-color: var(--pokedex-orange);
+      color: #fff;
+    }
+
+    .gen-btn.active {
+      background: linear-gradient(135deg, var(--pokedex-orange), var(--pokedex-red));
+      color: #fff;
+      border-color: #ffb703;
+      box-shadow: 0 0 10px rgba(255, 107, 0, 0.4);
+    }
+
+    .gen-btn-toggle {
+      background: #2b1418;
+      border: 1px dashed var(--pokedex-yellow);
+      color: var(--pokedex-yellow);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     /* --- SEARCH & AUTOCOMPLETE --- */
     .search-section {
       position: relative;
@@ -855,6 +917,23 @@
     </div>
 
     <div class="main-content">
+
+      <!-- FILTRO DE GENERACIONES (ACTIVO EN TODOS LOS MODOS EXCEPTO ROSCO) -->
+      <div class="gen-filter-container" id="gen-filter-container">
+        <span class="gen-filter-title">⚡ FILTRAR GENERACIONES ACTIVAS:</span>
+        <div class="gen-buttons-grid">
+          <button class="gen-btn active" id="gen-btn-1" onclick="toggleGen(1)">Gen 1</button>
+          <button class="gen-btn active" id="gen-btn-2" onclick="toggleGen(2)">Gen 2</button>
+          <button class="gen-btn active" id="gen-btn-3" onclick="toggleGen(3)">Gen 3</button>
+          <button class="gen-btn active" id="gen-btn-4" onclick="toggleGen(4)">Gen 4</button>
+          <button class="gen-btn active" id="gen-btn-5" onclick="toggleGen(5)">Gen 5</button>
+          <button class="gen-btn active" id="gen-btn-6" onclick="toggleGen(6)">Gen 6</button>
+          <button class="gen-btn active" id="gen-btn-7" onclick="toggleGen(7)">Gen 7</button>
+          <button class="gen-btn active" id="gen-btn-8" onclick="toggleGen(8)">Gen 8</button>
+          <button class="gen-btn active" id="gen-btn-9" onclick="toggleGen(9)">Gen 9</button>
+          <button class="gen-btn-toggle" onclick="selectAllGens()">TODAS</button>
+        </div>
+      </div>
       
       <div class="search-section" id="search-section">
         <div class="search-input-wrapper">
@@ -1001,7 +1080,7 @@
           <div style="text-align: center;">
             <span style="color: var(--pokedex-yellow); font-weight: 800;" id="zoom-streak">Racha actual: 0</span>
             <span style="margin: 0 10px;">|</span>
-            <span style="color: var(--pokedex-cyan); font-weight: 800;" id="zoom-level-status">Zoom: 450%</span>
+            <span style="color: var(--pokedex-cyan); font-weight: 800;" id="zoom-level-status">Zoom: 1200%</span>
           </div>
 
           <div class="zoom-card">
@@ -1044,6 +1123,7 @@
   <script>
     let activeMode = 'attr';
     let allPokemonList = [];
+    let selectedGens = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     let guessedPokemonIds = new Set();
     let highlightedIndex = -1;
 
@@ -1066,7 +1146,8 @@
     let silWrongGuesses = [];
 
     let targetZoomPokemon = null;
-    let zoomLevels = [4.5, 3.2, 2.2, 1.5, 1.0];
+    // Zoom súper ampliado al inicio (12x, 7.5x, 4.5x, 2.8x, 1.8x, 1.0x)
+    let zoomLevels = [12.0, 7.5, 4.5, 2.8, 1.8, 1.0];
     let zoomStepIndex = 0;
     let zoomStreak = 0;
     let zoomWrongGuesses = [];
@@ -1137,6 +1218,63 @@
       return 9;
     }
 
+    /* FILTRADO DE GENERACIONES */
+    function getFilteredPokemonList() {
+      if (activeMode === 'rosco') return allPokemonList;
+      return allPokemonList.filter(p => selectedGens.includes(getGenFromId(p.id)));
+    }
+
+    function getRandomPokemonIdFromFilter() {
+      const available = getFilteredPokemonList();
+      if (available.length === 0) return Math.floor(Math.random() * 1025) + 1;
+      const randomIndex = Math.floor(Math.random() * available.length);
+      return available[randomIndex].id;
+    }
+
+    function toggleGen(genNum) {
+      if (selectedGens.includes(genNum)) {
+        if (selectedGens.length === 1) {
+          showModal('⚠️️ FILTRO INVÁLIDO', 'Debes mantener seleccionada al menos una Generación.');
+          return;
+        }
+        selectedGens = selectedGens.filter(g => g !== genNum);
+      } else {
+        selectedGens.push(genNum);
+        selectedGens.sort((a,b) => a - b);
+      }
+      updateGenUI();
+      restartActiveGameForGenFilter();
+    }
+
+    function selectAllGens() {
+      selectedGens = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      updateGenUI();
+      restartActiveGameForGenFilter();
+    }
+
+    function updateGenUI() {
+      for (let i = 1; i <= 9; i++) {
+        const btn = document.getElementById(`gen-btn-${i}`);
+        if (btn) {
+          if (selectedGens.includes(i)) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      }
+    }
+
+    function restartActiveGameForGenFilter() {
+      if (activeMode === 'attr') {
+        startNewAttrGame();
+      } else if (activeMode === 'silhouette') {
+        initSilhouetteGame();
+      } else if (activeMode === 'zoom') {
+        initZoomGame();
+      }
+    }
+
     function setupInputEvents() {
       const input = document.getElementById('pk-input');
       const dropdown = document.getElementById('dropdown-list');
@@ -1149,7 +1287,9 @@
           return;
         }
 
-        const matches = allPokemonList.filter(p => 
+        const availableList = getFilteredPokemonList();
+
+        const matches = availableList.filter(p => 
           !guessedPokemonIds.has(p.id) && p.name.toLowerCase().includes(query)
         ).slice(0, 10);
 
@@ -1226,9 +1366,11 @@
       const query = input.value.trim().toLowerCase();
       if (!query) return;
 
-      const found = allPokemonList.find(p => p.name.toLowerCase() === query);
+      const availableList = getFilteredPokemonList();
+      const found = availableList.find(p => p.name.toLowerCase() === query);
+      
       if (!found) {
-        showModal('⚠️ NO ENCONTRADO', '¡Ese Pokémon no existe en la Pokédex!');
+        showModal('⚠️ NO PERMITIDO', 'Ese Pokémon no existe o no pertenece a las generaciones seleccionadas.');
         return;
       }
 
@@ -1258,7 +1400,7 @@
       guessedPokemonIds.clear();
       document.getElementById('guesses-container').innerHTML = '';
       
-      const randomId = Math.floor(Math.random() * 1025) + 1;
+      const randomId = getRandomPokemonIdFromFilter();
       targetAttrPokemon = await fetchPokemonDetails(randomId);
     }
 
@@ -1603,7 +1745,7 @@
       document.getElementById('sil-hint-btn').disabled = false;
       document.getElementById('sil-history-tags').innerHTML = '';
 
-      const randomId = Math.floor(Math.random() * 1025) + 1;
+      const randomId = getRandomPokemonIdFromFilter();
       targetSilPokemon = await fetchPokemonDetails(randomId);
       img.src = targetSilPokemon.sprite;
     }
@@ -1684,7 +1826,7 @@
       initSilhouetteGame();
     }
 
-    /* MODO 4: ZOOM PROGRESIVO */
+    /* MODO 4: ZOOM PROGRESIVO (MÁXIMO ZOOM INICIAL) */
     async function initZoomGame() {
       zoomStepIndex = 0;
       zoomWrongGuesses = [];
@@ -1699,7 +1841,7 @@
 
       document.getElementById('zoom-history-tags').innerHTML = '';
 
-      const randomId = Math.floor(Math.random() * 1025) + 1;
+      const randomId = getRandomPokemonIdFromFilter();
       targetZoomPokemon = await fetchPokemonDetails(randomId);
       img.src = targetZoomPokemon.sprite;
     }
@@ -1908,6 +2050,9 @@
       document.getElementById('mode-silhouette-view').style.display = mode === 'silhouette' ? 'block' : 'none';
       document.getElementById('mode-zoom-view').style.display = mode === 'zoom' ? 'block' : 'none';
       document.getElementById('mode-rosco-view').style.display = mode === 'rosco' ? 'block' : 'none';
+
+      // Ocultar filtro de generaciones si se entra al Rosco
+      document.getElementById('gen-filter-container').style.display = (mode === 'rosco') ? 'none' : 'flex';
 
       if (mode === 'vs' && vsGameState === 'lobby') {
         document.getElementById('search-section').style.display = 'none';
