@@ -466,6 +466,38 @@
     .type-fairy { background: #EE99AC; color: #111; }
     .type-dark { background: #705848; color: #fff; }
 
+    /* --- TIPOS DEL MODO ATRIBUTOS --- */
+    /* El color de acierto se aplica al RECUADRO exterior, no al nombre del tipo. */
+    .type-result {
+      width: 100%;
+      min-height: 54px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    .type-result.badge-exact {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+
+    .type-result.badge-partial {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .type-result.badge-wrong {
+      background: #231215;
+      border: 1px solid #3d1c22;
+    }
+
+    .type-result .type-badge {
+      margin: 0;
+      width: 90%;
+    }
+
     /* --- HINTS CONTAINER --- */
     .hints-panel {
       background: rgba(15, 7, 9, 0.7);
@@ -956,12 +988,6 @@
             <div class="legend-dot" style="background:#10b981;"></div> Coincidencia Correcta
           </div>
           <div class="legend-item">
-            <div class="legend-dot" style="background:#ffb703;"></div> Tipo correcto, pero en otra posición
-          </div>
-          <div class="legend-item">
-            <div class="legend-dot" style="background:#231215;"></div> Tipo incorrecto
-          </div>
-          <div class="legend-item">
             <div class="legend-dot" style="background:#ff6b00;"></div> ⬆ Secreto es MAYOR (Gen/Alt/Peso)
           </div>
           <div class="legend-item">
@@ -1197,6 +1223,16 @@
         cb();
       }
     }
+
+    // Permite cerrar cualquier aviso pulsando Enter, igual que el botón ENTENDIDO.
+    // Solo actúa cuando el modal está abierto para no interferir con el juego.
+    document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('pokeriddle-modal');
+      if (modal && modal.classList.contains('active') && e.key === 'Enter') {
+        e.preventDefault();
+        closeModal();
+      }
+    });
 
     async function initPokedex() {
       try {
@@ -1467,14 +1503,11 @@
       const heightBadge = getNumericBadge(g.height, targetPk.height, 'm', true);
       const weightBadge = getNumericBadge(g.weight, targetPk.weight, 'kg', true);
 
-      // Tipos al estilo Pokédle:
-      // verde = mismo tipo y misma posición, amarillo = tipo correcto pero cambiado de posición, rojo = incorrecto.
-      const type1Class = g.type1 === targetPk.type1
-        ? 'badge-exact'
-        : (g.type1 === targetPk.type2 ? 'badge-partial' : 'badge-wrong');
-      const type2Class = g.type2 === targetPk.type2
-        ? 'badge-exact'
-        : (g.type2 === targetPk.type1 ? 'badge-partial' : 'badge-wrong');
+      const type1Class = g.type1 === targetPk.type1 ? 'badge-exact' : (g.type1 === targetPk.type2 ? 'badge-partial' : 'badge-wrong');
+      const type2Class = g.type2 === targetPk.type2 ? 'badge-exact' : (g.type2 !== 'ninguno' && g.type2 === targetPk.type1 ? 'badge-partial' : 'badge-wrong');
+
+      const type1Display = g.type1.toUpperCase();
+      const type2Display = g.type2.toUpperCase();
 
       const row = document.createElement('div');
       row.className = 'guess-row';
@@ -1486,12 +1519,16 @@
 
         <div class="attr-card">
           <span class="attr-label">Tipo 1</span>
-          <div class="type-badge type-${g.type1} ${type1Class}">${g.type1}</div>
+          <div class="type-result ${type1Class}">
+            <div class="type-badge type-${g.type1}">${type1Display}</div>
+          </div>
         </div>
 
         <div class="attr-card">
           <span class="attr-label">Tipo 2</span>
-          <div class="type-badge ${g.type2 !== 'ninguno' ? `type-${g.type2}` : ''} ${type2Class}">${g.type2}</div>
+          <div class="type-result ${type2Class}">
+            <div class="type-badge ${g.type2 !== 'ninguno' ? `type-${g.type2}` : ''}">${type2Display}</div>
+          </div>
         </div>
 
         <div class="attr-card">
