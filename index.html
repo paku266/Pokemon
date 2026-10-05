@@ -1192,6 +1192,14 @@
       }
     }
 
+    document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('pokeriddle-modal');
+      if (modal.classList.contains('active') && e.key === 'Enter') {
+        e.preventDefault();
+        closeModal();
+      }
+    });
+
     async function initPokedex() {
       try {
         const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
